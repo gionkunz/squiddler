@@ -1,0 +1,210 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.ctp.squiddler</groupId>
+		<artifactId>squiddler</artifactId>
+		<version>0.1-SNAPSHOT</version>
+	</parent>
+	<artifactId>squiddler-app</artifactId>
+	<name>Squiddler Application</name>
+
+
+	<developers>
+		<developer>
+			<id>gkunz</id>
+			<name>Gion Kunz</name>
+			<email>gion.kunz@ctp.com</email>
+		</developer>
+	</developers>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.ctp.squiddler</groupId>
+			<artifactId>squiddler-commons</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.oracle</groupId>
+			<artifactId>javafx</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-core</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-queries</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-analyzers-common</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-queryparser</artifactId>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.7</source>
+					<target>1.7</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<!-- copy all dependencies of your app to target folder -->
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>2.3</version>
+				<executions>
+					<execution>
+						<id>copy-dependencies</id>
+						<phase>package</phase>
+						<configuration>
+							<overWriteReleases>false</overWriteReleases>
+							<overWriteSnapshots>false</overWriteSnapshots>
+							<overWriteIfNewer>true</overWriteIfNewer>
+						</configuration>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifestEntries>
+							<JavaFX-Version>${javafx.version}+</JavaFX-Version>
+							<Main-Class>com.ctp.squiddler.SquiddlerApplication</Main-Class>
+							<implementation-version>1.0</implementation-version>
+							<JavaFX-Application-Class>com.ctp.squiddler.SquiddlerApplication</JavaFX-Application-Class>
+							<JavaFX-Class-Path>
+								<!-- list all your dependencies here -->
+							</JavaFX-Class-Path>
+							<Class-Path>javafx-${javafx.version}.jar</Class-Path>
+						</manifestEntries>
+						<manifest>
+							<addClasspath>true</addClasspath>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>1.6</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<configuration>
+							<target>
+								<!-- define the deploy ANT task -->
+								<taskdef name="jfxdeploy" classname="com.sun.javafx.tools.ant.DeployFXTask"
+									classpathref="maven.plugin.classpath" />
+								<!-- define the JarSing ANT task -->
+								<taskdef name="jfxsignjar" classname="com.sun.javafx.tools.ant.FXSignJarTask"
+									classpathref="maven.plugin.classpath" />
+								<jfxdeploy width="1024" height="768"
+									outdir="${project.build.directory}/deploy" outfile="${build.finalName}"
+									nativeBundles="all">
+									<info title="${project.name}" />
+									<!-- set the main class of your applcation; I had to create a Main.class 
+										(class Main extends MyMain) otherwise it will return an error on start -->
+									<application name="${project.name}"
+										mainClass="com.ctp.squiddler.SquiddlerApplication" />
+									<resources>
+										<fileset dir="${project.build.directory}" includes="*.jar" />
+										<fileset dir="${project.build.directory}/dependency"
+											includes="*.jar" />
+									</resources>
+									<!-- set your jvm args -->
+									<platform javafx="${javafx.version}+">
+										<jvmarg value="-Xms512m" />
+										<jvmarg value="-Xmx1024m" />
+									</platform>
+								</jfxdeploy>
+								<!-- you need to generate a key yourself -->
+								<jfxsignjar destdir="${project.build.directory}/deploy"
+									keyStore="security/squiddler.jks" storePass="changeit" alias="squiddler"
+									keyPass="Sq1ddl3r">
+									<fileset dir="${project.build.directory}/deploy"
+										includes="*.jar" />
+								</jfxsignjar>
+							</target>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+				</executions>
+				<dependencies>
+					<dependency>
+						<groupId>com.oracle</groupId>
+						<artifactId>ant-javafx</artifactId>
+						<version>${javafx.version}</version>
+						<systemPath>${java.home}/../lib/ant-javafx.jar</systemPath>
+						<scope>system</scope>
+					</dependency>
+					<dependency>
+						<groupId>com.oracle</groupId>
+						<artifactId>javafx</artifactId>
+						<version>${javafx.version}</version>
+						<systemPath>${java.home}/lib/jfxrt.jar</systemPath>
+						<scope>system</scope>
+					</dependency>
+				</dependencies>
+			</plugin>
+		</plugins>
+
+		<pluginManagement>
+			<plugins>
+				<!--This plugin's configuration is used to store Eclipse m2e settings 
+					only. It has no influence on the Maven build itself. -->
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+											org.apache.maven.plugins
+										</groupId>
+										<artifactId>
+											maven-dependency-plugin
+										</artifactId>
+										<versionRange>
+											[2.3,)
+										</versionRange>
+										<goals>
+											<goal>
+												copy-dependencies
+											</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+</project>
